@@ -1,4 +1,4 @@
-# Learning Angular not for fun and zero profit
+# [Learning Angular not for fun and zero profit](https://angular.io)
 
 As my side project (based around our hamster) needs a front end I am finally required to learn a bit of front end programming
 
@@ -16,7 +16,7 @@ Typescript is Transpiled into Javascript
 
 Angular is a SPA. It has a single index.html that references a single directive name (a directive name is a custom html tag). This this loads the rest of the app
 
-## Modules
+## [Modules](https://angular.io/guide/architecture-modules)
 
 Angular is modular and consists of many library modules such as:
 
@@ -55,7 +55,7 @@ export class AppModule { }
 * `imports`: external modules we want available to all our components in this module
 * `bootstrap`: The component to start (launch)
 
-## Components
+## [Components](https://angular.io/guide/architecture-components)
 
 Angular modules consist Components. Components can be nested within each other.
 
@@ -196,7 +196,7 @@ In the example we see the `[()]` which is the property binding `[]` and the even
 
 This would tke the user input and then update t
 
-## Pipes
+## [Pipes](https://angular.io/guide/pipes)
 
 These are used in interpolation to transform the value of a bound property before it is displayed. They work like Unix pipes and there are pre-built pipes
 
@@ -207,7 +207,7 @@ e.g.
 <td>{{product.price | currency:'GBP':'symbol':'1.2-2'}}</td>
 ```
 
-## Angular structural directives
+## [Angular structural directives](https://angular.io/guide/structural-directives)
 
 Structural directives modifies the structure of the layout or view
 
@@ -236,7 +236,7 @@ We can see the *ngIf where a statement is evaluated and if it is true the DOM wi
 
 The *ngFor will evaluate the expression and then we can use interpolation in the sub DOM and access it's properties
 
-### Angular Component Lifecycle
+### [Angular Component Lifecycle](https://angular.io/guide/lifecycle-hooks)
 
 Angular Components have a life cycle (like Game Objects in Unity3D). It is possible to hook into the lifecycle of a component
 
@@ -290,4 +290,111 @@ export class ProductListComponent implements OnDestroy {
 }
 ```
 
-## Event Emitter
+## Passing data between components
+
+Usually it is needed to communicate between a Parent and Child component. An event emitter can be passed information and then to emit events in the child (aka nested) component it hooks into an event handler defined in the parent.
+
+### Passing data to nested component `@Input`
+
+To decalare that a value can be passed to a component we use the `@Input` decorator
+
+```typescript
+import { Component, Input } from '@angular/core';
+@Component({
+    selector: 'pm-star'
+})
+export class StarComponent {
+
+    @Input()
+    rating: number;
+}
+```
+
+Passing to the nested component uses **Property Binding** to pass in the value. We can see here how this is done
+
+```html
+<pm-star [rating]='product.starRating' ></pm-star>
+```
+
+This is the only time we can target a nested components property when it has the @Input decorator
+
+### [Event Emitter](https://angular.io/api/core/EventEmitter) @Output
+
+If the nested component wants to raise an event with its parent then we need to use the EventEmitter. The component exposes an event for the parent. The EventEmitter uses Generics to pass back the event type.
+
+The output must be of an event type
+
+```typescript
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+@Component({
+    selector: 'pm-star'
+})
+export class StarComponent {
+
+    @Input()
+    rating: number;
+
+    @Output()
+    starNotify: EventEmitter<string>() = new EventEmitter<string>();
+
+    starOnClick(): void {
+        this.starNotify.emit('I was clicked!!!')
+    }
+}
+```
+
+The emit() method is called to emit the event
+
+This is using the **Event Binding** in the HTML to receive the event. We can see in the following example that the parameter type of the `event` is a string. This type is the same as that of the EventEmitter type.
+
+Notice in the event binding that the parameter is defined with `$event`. The `$` is important to remember to bind to the result
+
+```html
+<pm-star [rating]='product.starRating' (starNotify)='onNotify($event)' ></pm-star>
+```
+
+```typescript
+export class ParentComponent {
+  onNotify(event: string): void {
+        console.log(`Got event! Message was ${event}`)
+        this.pageTitle = event
+    }
+}
+```
+
+## [Dependency injection](https://angular.io/guide/dependency-injection)
+
+Dependency injection is done by declaring a service using the `@Injectable`. The Class that wants to use this declares the type in its constructor and it will be pulled in.
+
+A service is registered into the Angular Injector and can be set a different injector levels. It can be injected at the root level `provider` (which it is by default) or it can be injected with a specific injector provider name to limit its scope.
+
+The file format for a service is \<service name>.service.ts e.g. `product.service.ts`
+
+An example of a Service is:
+
+```typescript
+import { Injectable } from '@angular/core';
+// @Injectable() these are both equivalent
+@Injectable({providedIn: 'root'})
+export class ProductService {
+
+}
+```
+
+As the service is registered we can now use it and pick it up in a class
+
+```typescript
+@Component({
+    selector: 'pm-products',
+    templateUrl: './product-list.component.html',
+})
+export class ProductListComponent {
+
+  // These two are equivalent. Adding private in constructor adds it as a property to the class and is short hand
+  // private _productService: ProductService;
+  // constructor(productService: ProductService) {
+  //   this._productService = productService.getProducts();
+  // }
+  constructor(private productService: ProductService) {}
+}
+```
